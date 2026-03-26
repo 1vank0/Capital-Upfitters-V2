@@ -1,0 +1,39 @@
+{
+  "name": "capital-upfitters-cms",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "seed": "cross-env NODE_OPTIONS=--no-deprecation tsx src/lib/seed.ts"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.80.0",
+    "@payloadcms/next": "3.80.0",
+    "@payloadcms/payload-cloud": "3.80.0",
+    "@payloadcms/plugin-seo": "3.80.0",
+    "@payloadcms/richtext-lexical": "3.80.0",
+    "@payloadcms/storage-s3": "3.80.0",
+    "@payloadcms/storage-vercel-blob": "3.80.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^17.3.1",
+    "graphql": "^16.10.0",
+    "next": "15.4.11",
+    "payload": "3.80.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sharp": "0.32.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
