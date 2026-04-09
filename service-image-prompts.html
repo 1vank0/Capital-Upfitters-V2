@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Image Prompts — Capital Upfitters</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --border: rgba(255,255,255,0.08);
+    --text: #f9fafb;
+    --muted: rgba(255,255,255,0.45);
+    --accent: #3b82f6;
+    --navy: #203055;
+    --green: #22c55e;
+    --amber: #f59e0b;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Inter', sans-serif; min-height: 100vh; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .header h1 span { color: var(--accent); }
+  .header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .badge { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Main */
+  .main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+  .intro { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .intro strong { color: var(--text); }
+
+  /* Service tabs */
+  .service-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+  .service-tab { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .service-tab.active { background: var(--navy); border-color: rgba(59,130,246,0.4); color: var(--text); }
+
+  /* Service panels */
+  .service-panel { display: none; }
+  .service-panel.active { display: block; }
+
+  .panel-header { margin-bottom: 24px; }
+  .panel-header h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+  .panel-header p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+  /* Prompt tabs within a service */
+  .prompt-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .prompt-tab { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--muted); background: transparent; transition: all 0.15s; }
+  .prompt-tab.active { background: var(--accent); border-color: transparent; color: #fff; }
+
+  /* Prompt panels */
+  .prompt-panel { display: none; }
+  .prompt-panel.active { display: block; }
+
+  .prompt-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .prompt-box-header { background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .prompt-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .copy-btn { background: var(--navy); color: #fff; border: none; padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { background: #2a3d6a; }
+  .copy-btn.copied { background: #15803d; }
+  .prompt-text { padding: 20px; font-size: 13px; line-height: 1.8; color: rgba(255,255,255,0.8); white-space: pre-wrap; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  /* Tool guide */
+  .tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 32px; }
+  .tool-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .tool-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .tool-card p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .tool-label { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
+  .label-img { background: rgba(34,197,94,0.15); color: var(--green); }
+  .label-vid { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .label-both { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+  /* Confetti canvas */
+  #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<div class="header">
+  <div>
+    <h1>Service Image Prompts — <span>Capital Upfitters</span></h1>
+    <p>Scroll-stop AI image & video prompts for all 7 services · Copy → paste into Midjourney, Flux, Runway, Kling</p>
+  </div>
+  <span class="badge">7 Services · 3 Prompts Each</span>
+</div>
+
+<div class="main">
+
+  <div class="intro">
+    <strong>How to use:</strong> Select a service below. Each has 3 prompts:<br>
+    <strong>Prompt A</strong> = "Before" hero shot (dirty/plain vehicle). <strong>Prompt B</strong> = "After" hero shot (pristinely upfitted vehicle). <strong>Prompt C</strong> = Video transition prompt for Runway / Kling.<br>
+    Generate A first, then reference it when generating B for consistent lighting. Upload the final images to <a href="/admin/collections/media" style="color: var(--accent);">CMS Media</a> and attach to each service's <strong>Featured Image</strong> field.
+  </div>
+
+  <!-- Service nav tabs -->
+  <div class="service-nav">
+    <button class="service-tab active" onclick="switchService('bedliner', this)">🛡️ Bedliner</button>
+    <button class="service-tab" onclick="switchService('hitches', this)">🔗 Hitches</button>
+    <button class="service-tab" onclick="switchService('ceramic', this)">✨ Ceramic Coating</button>
+    <button class="service-tab" onclick="switchService('undercoating', this)">🔧 Undercoating</button>
+    <button class="service-tab" onclick="switchService('tonneau', this)">📦 Tonneau Cover</button>
+    <button class="service-tab" onclick="switchService('running-boards', this)">👣 Running Boards</button>
+    <button class="service-tab" onclick="switchService('wraps', this)">🎨 Commercial Wraps</button>
+  </div>
+
+  <!-- ── BEDLINER ─────────────────────────────────────────────────────────── -->
+  <div class="service-panel active" id="panel-bedliner">
+    <div class="panel-header">
+      <h2>🛡️ Spray-On Bedliners (Patriot Liner)</h2>
+      <p>Transformation style — plain bed to fully lined, textured, protected bed</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('bedliner', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('bedliner', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('bedliner', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="bedliner-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9 · Paste into Midjourney or Flux</span><button class="copy-btn" onclick="copyPrompt(this, 'bedliner-a-text')">Copy</button></div>
+        <div class="prompt-text" id="bedliner-a-text">Professional automotive photography of a 2024 Ford F-150 SuperCrew pickup truck bed, shot from a low 3/4 rear angle. Clean white studio background (#FFFFFF) extending to infinity. The truck bed is completely bare and unprotected — raw, slightly scuffed factory steel/composite surface visible, no bedliner. A few minor scratches and tool marks catch the studio light. The truck is metallic dark blue or black. Overall mood: functional but unprotected.
+
+Photorealistic rendering, 16:9 aspect ratio, automotive catalog quality. Sharp focus across the entire truck bed. Soft studio lighting with large overhead softbox, subtle shadows beneath the truck. No text, no logos, no other objects in frame.
+
+Shot on Canon EOS R5, 35mm lens, f/8, studio strobe lighting. Ultra-sharp detail, 8K quality downsampled to 4K.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="bedliner-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle as Prompt A</span><button class="copy-btn" onclick="copyPrompt(this, 'bedliner-b-text')">Copy</button></div>
+        <div class="prompt-text" id="bedliner-b-text">Professional automotive photography of the SAME 2024 Ford F-150 SuperCrew pickup truck, shot from the SAME low 3/4 rear angle as Prompt A. Clean white studio background (#FFFFFF). The truck bed is now completely coated in a thick, matte black Patriot Liner spray-on bedliner — the texture is richly detailed, uniform grain pattern visible across every surface including wheel wells and side rails.
+
+The transformation is dramatic and unmistakable. The bed looks bulletproof, industrial, and premium. Same truck, same angle, completely different bed surface. Studio lighting identical to Prompt A — same overhead softbox position.
+
+Photorealistic rendering, 16:9 aspect ratio. The bedliner texture should show subtle light variance across the peaks and valleys of the grain — tactile realism. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="bedliner-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Paste into Runway Gen-3 or Kling AI</span><button class="copy-btn" onclick="copyPrompt(this, 'bedliner-c-text')">Copy</button></div>
+        <div class="prompt-text" id="bedliner-c-text">START FRAME: Bare, unprotected F-150 truck bed — raw metal surface, slight scratches, no bedliner. White studio background. Low 3/4 rear angle, locked off tripod.
+
+END FRAME: Same truck bed completely coated in matte black Patriot Liner spray-on bedliner. Thick, uniform grain texture covering every surface. Same camera angle, same white background, same lighting.
+
+TRANSITION: A wave of rich black spray-on coating sweeps across the truck bed from front to back — like a liquid rolling over the surface. The coating visibly builds up in real time, revealing the textured grain as it dries. The unprotected metal disappears progressively as the liner covers it completely. The sweep happens over 2.5 seconds in a smooth, satisfying motion.
+
+STYLE: Photorealistic, white background throughout, locked-off camera — no camera movement. The only motion is the bedliner application sweep. Cinematic, ASMR-quality precision. 5-6 seconds total. 16:9, 24fps or higher.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HITCHES ──────────────────────────────────────────────────────────── -->
+  <div class="service-panel" id="panel-hitches">
+    <div class="panel-header">
+      <h2>🔗 Trailer Hitch Installation</h2>
+      <p>Transformation style — no hitch to installed class III hitch with ball mount</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('hitches', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('hitches', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('hitches', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="hitches-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9</span><button class="copy-btn" onclick="copyPrompt(this, 'hitches-a-text')">Copy</button></div>
+        <div class="prompt-text" id="hitches-a-text">Professional automotive photography of the rear of a 2024 Ford F-150 pickup truck at bumper level, shot from a low center-rear angle. Clean white studio background (#FFFFFF). The rear bumper area is completely factory stock — no hitch receiver, no trailer wiring visible. The undercarriage near the bumper is clean factory paint. Mood: capable truck with untapped towing potential.
+
+Photorealistic rendering, 16:9 aspect ratio. Sharp focus on the rear bumper and undercarriage. Studio lighting with large softbox overhead, subtle shadows beneath the truck. No text, no logos.
+
+Shot on Canon EOS R5, 50mm lens, f/8, studio strobes. Ultra-sharp detail.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="hitches-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle as Prompt A</span><button class="copy-btn" onclick="copyPrompt(this, 'hitches-b-text')">Copy</button></div>
+        <div class="prompt-text" id="hitches-b-text">Professional automotive photography of the SAME F-150 rear, from the SAME low center-rear angle. Clean white studio background. A CURT Class III trailer hitch receiver is now professionally installed — gloss black powder-coated steel, 2-inch receiver tube visible, heavy-duty construction. A chrome ball mount with 2" trailer ball is inserted in the receiver. Trailer wiring harness (7-pin) is neatly routed alongside.
+
+The installation looks factory-clean and professional — perfectly centered, flush against the frame. Same lighting as Prompt A — overhead softbox, same shadows.
+
+Photorealistic, 16:9. The hitch should look heavy-duty, trustworthy, and precisely installed. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="hitches-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Runway / Kling</span><button class="copy-btn" onclick="copyPrompt(this, 'hitches-c-text')">Copy</button></div>
+        <div class="prompt-text" id="hitches-c-text">START FRAME: F-150 rear bumper — factory stock, no hitch. White studio background, locked camera.
+
+END FRAME: Same truck with professional CURT Class III hitch installed — black powder-coat, 2" receiver, ball mount and 7-pin wiring visible.
+
+TRANSITION: The hitch receiver assembly slides into position from below the frame, snapping precisely into its mount points. Bolts tighten in rapid sequence. The ball mount slides into the receiver with a satisfying click. The wiring harness neatly routes into place. Each step is crisp and mechanical. Over 3 seconds total.
+
+STYLE: Photorealistic, white background throughout, locked-off camera. Only motion is the hitch installation sequence. Engineering animation quality. 5-6 seconds, 16:9.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CERAMIC COATING ──────────────────────────────────────────────────── -->
+  <div class="service-panel" id="panel-ceramic">
+    <div class="panel-header">
+      <h2>✨ Ceramic Coating & PPF</h2>
+      <p>Transformation style — dull faded paint to glass-like, hydrophobic ceramic finish</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('ceramic', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('ceramic', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('ceramic', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="ceramic-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9</span><button class="copy-btn" onclick="copyPrompt(this, 'ceramic-a-text')">Copy</button></div>
+        <div class="prompt-text" id="ceramic-a-text">Professional automotive photography of a black 2023 GMC Sierra pickup truck hood and front quarter panel, tight 3/4 front shot. Clean white studio background (#FFFFFF). The paint is unprotected — visibly dull, slightly oxidized, with light swirl marks and micro-scratches visible under studio lighting. Light water spots on the surface. The paint has lost its original depth and gloss. Mood: expensive truck that needs protection.
+
+Photorealistic, 16:9 aspect ratio. Sharp focus on the paint surface texture — swirl marks must be clearly visible. Overhead studio softbox with angled fill light to reveal paint defects. No text, no logos.
+
+Shot on Phase One IQ4, 80mm lens, f/11, studio strobes. Ultra-sharp detail at 8K.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="ceramic-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle as Prompt A</span><button class="copy-btn" onclick="copyPrompt(this, 'ceramic-b-text')">Copy</button></div>
+        <div class="prompt-text" id="ceramic-b-text">Professional automotive photography of the SAME black GMC Sierra hood and quarter panel, from the SAME 3/4 front angle. White studio background. The paint is now protected by IGL Coatings ceramic coating — the surface is mirror-like, glass-smooth, ultra-deep gloss. All swirl marks and water spots are gone. The black paint has perfect, liquid depth — like looking into obsidian. Studio lights reflect in crisp, sharp lines across the surface.
+
+Bonus detail: a few water droplets bead perfectly on the ceramic surface — spherical, crystal-clear, showing the hydrophobic effect.
+
+Same studio lighting as Prompt A. Photorealistic, 16:9. The transformation should look breathtaking. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="ceramic-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Runway / Kling</span><button class="copy-btn" onclick="copyPrompt(this, 'ceramic-c-text')">Copy</button></div>
+        <div class="prompt-text" id="ceramic-c-text">START FRAME: Black truck hood — dull, oxidized, swirl marks visible under studio lighting. White background, locked camera.
+
+END FRAME: Same hood — mirror-perfect ceramic coating, glass-deep gloss, water beading in perfect spheres on the surface.
+
+TRANSITION: An invisible wave sweeps across the paint surface from left to right — as it passes, the dull, scratched paint transforms into a mirror-like ceramic finish. The gloss "arrives" like light flooding into a room. Swirl marks vanish. The reflection sharpens progressively. At the end, a few water droplets bead up on the surface with satisfying surface tension. The wave takes 2.5 seconds. Hold on the perfect finish for 1.5 seconds.
+
+STYLE: Photorealistic, white background, locked camera. Only motion is the coating sweep and water beading. Extremely satisfying and premium. 5-6 seconds, 16:9.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── UNDERCOATING ─────────────────────────────────────────────────────── -->
+  <div class="service-panel" id="panel-undercoating">
+    <div class="panel-header">
+      <h2>🔧 Undercoating & Rust Protection</h2>
+      <p>Transformation style — exposed, rusty undercarriage to sealed, protected undercarriage</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('undercoating', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('undercoating', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('undercoating', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="undercoating-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9</span><button class="copy-btn" onclick="copyPrompt(this, 'undercoating-a-text')">Copy</button></div>
+        <div class="prompt-text" id="undercoating-a-text">Professional automotive photography shot from directly below a truck, looking up at the exposed undercarriage. Clean white studio background/environment. The undercarriage shows unprotected metal — surface rust starting on frame rails, exposed brake lines, raw steel floor pan, mud and road grime residue in crevices. The metal looks vulnerable to continued road salt and moisture damage. Mood: expensive truck at risk of corrosion.
+
+Technical photography style — like a mechanic's inspection shot. Photorealistic, 16:9. Overhead (under-vehicle) lighting reveals every detail of the exposed metal and early rust. Sharp focus across the full undercarriage. No text, no logos.
+
+Shot on Canon R5, 24mm wide lens, f/11. Ultra-sharp detail.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="undercoating-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle</span><button class="copy-btn" onclick="copyPrompt(this, 'undercoating-b-text')">Copy</button></div>
+        <div class="prompt-text" id="undercoating-b-text">Professional automotive photography from the SAME below-vehicle angle. Same white studio environment. The undercarriage is now completely coated in matte black rubberized undercoating — every surface uniformly sealed. Frame rails, floor pan, suspension components, and brake line runs are all covered in the thick, matte black protective coating. No rust visible, no exposed metal. The coating has a slightly textured, rubbery surface.
+
+The transformation is total — the undercarriage looks armored and impervious. Same lighting setup as Prompt A. Photorealistic, 16:9. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="undercoating-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Runway / Kling</span><button class="copy-btn" onclick="copyPrompt(this, 'undercoating-c-text')">Copy</button></div>
+        <div class="prompt-text" id="undercoating-c-text">START FRAME: Truck undercarriage — exposed metal, surface rust, raw steel visible. White studio, camera locked looking up.
+
+END FRAME: Same undercarriage fully coated in thick matte black rubberized undercoating. Every surface sealed.
+
+TRANSITION: Thick black undercoating sprays across the undercarriage in overlapping passes — like paint spraying in real time. The raw metal disappears under each pass, progressively sealed from front to rear. The spray builds up with satisfying coverage, each pass leaving a uniform matte black seal. Rust and metal vanish completely. 3 seconds of spray, then hold on the sealed result for 1.5 seconds.
+
+STYLE: Photorealistic, white background, locked camera. Only motion is the undercoating spray application. Industrial, satisfying, reassuring. 5-6 seconds, 16:9.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TONNEAU ──────────────────────────────────────────────────────────── -->
+  <div class="service-panel" id="panel-tonneau">
+    <div class="panel-header">
+      <h2>📦 Tonneau Covers</h2>
+      <p>Transformation style — open exposed truck bed to sleek covered bed</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('tonneau', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('tonneau', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('tonneau', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="tonneau-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9</span><button class="copy-btn" onclick="copyPrompt(this, 'tonneau-a-text')">Copy</button></div>
+        <div class="prompt-text" id="tonneau-a-text">Professional automotive photography of a white 2024 Ram 1500 pickup truck, shot from a 3/4 rear elevated angle showing the full truck bed. Clean white studio background (#FFFFFF). The truck bed is completely open and uncovered — factory stock bed rails visible, empty bed floor exposed, tailgate closed. Functional but exposed and unsecured. Mood: truck ready for upgrades.
+
+Photorealistic, 16:9. Studio softbox lighting from above-left, clean shadows. Sharp focus on the full truck from rear 3/4 view. No text, no logos.
+
+Shot on Canon EOS R5, 35mm, f/8, studio strobes.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="tonneau-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle</span><button class="copy-btn" onclick="copyPrompt(this, 'tonneau-b-text')">Copy</button></div>
+        <div class="prompt-text" id="tonneau-b-text">Professional automotive photography of the SAME white Ram 1500, from the SAME 3/4 rear elevated angle. Clean white studio background. The truck bed now has a sleek, low-profile tri-fold hard tonneau cover installed — matte black finish, flush with the bed rails, factory-integrated look. The cover is in the closed position, making the truck look aerodynamic and premium. 
+
+Same lighting as Prompt A. The tonneau cover dramatically changes the truck's silhouette — from open working truck to sharp, polished appearance. Photorealistic, 16:9. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="tonneau-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Runway / Kling</span><button class="copy-btn" onclick="copyPrompt(this, 'tonneau-c-text')">Copy</button></div>
+        <div class="prompt-text" id="tonneau-c-text">START FRAME: White Ram 1500 with open, uncovered truck bed — 3/4 rear elevated angle, white studio background, locked camera.
+
+END FRAME: Same truck with sleek matte black tri-fold tonneau cover installed and closed — flush with bed rails, completely secured.
+
+TRANSITION: The tonneau cover panels unfold from the cab and slide backward in sequence — panel 1, panel 2, panel 3 — each snapping flat into position. The motion is smooth and mechanical, like origami unfolding in reverse. Takes 2 seconds. The truck's profile transforms from open to sealed as each panel locks. Final hold: 2 seconds on the completed, sleek result.
+
+STYLE: Photorealistic, white background, locked camera. Mechanical precision. 5-6 seconds, 16:9.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RUNNING BOARDS ───────────────────────────────────────────────────── -->
+  <div class="service-panel" id="panel-running-boards">
+    <div class="panel-header">
+      <h2>👣 Running Boards & Nerf Bars</h2>
+      <p>Transformation style — bare rocker panel to custom running board installed</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('running-boards', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('running-boards', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('running-boards', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="running-boards-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9</span><button class="copy-btn" onclick="copyPrompt(this, 'running-boards-a-text')">Copy</button></div>
+        <div class="prompt-text" id="running-boards-a-text">Professional automotive photography of the side profile of a tall black 2024 Chevy Silverado 1500 crew cab pickup truck, shot from a low door-level angle showing the full rocker panel and door sills. Clean white studio background (#FFFFFF). No running boards or nerf bars — the truck sits high off the ground, the step gap between the door sill and the ground is clearly large. The rocker panel is factory stock painted body color.
+
+16:9, photorealistic. Studio lighting from above with subtle ground reflection. Sharp focus on the rocker panel area. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="running-boards-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle</span><button class="copy-btn" onclick="copyPrompt(this, 'running-boards-b-text')">Copy</button></div>
+        <div class="prompt-text" id="running-boards-b-text">Professional automotive photography of the SAME Silverado from the SAME side door-level angle. White studio background. Custom OEM-style running boards are now professionally installed along the full length of the cab — black powder-coated aluminum with non-slip step surface, factory-mounting hardware, perfectly level and flush with the rocker panel line.
+
+The running boards look integrated, not aftermarket — like they came from the factory. Same lighting as Prompt A. Photorealistic, 16:9. No text, no logos.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="running-boards-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Runway / Kling</span><button class="copy-btn" onclick="copyPrompt(this, 'running-boards-c-text')">Copy</button></div>
+        <div class="prompt-text" id="running-boards-c-text">START FRAME: Silverado side profile — bare rocker panel, no running boards, high step gap visible. White studio, locked camera at door level.
+
+END FRAME: Same truck with custom running boards fully installed — black powder-coat, non-slip steps, factory-clean fitment.
+
+TRANSITION: The running board assembly rises into position from below the rocker panel — mounting brackets click into place first, then the board slides into final position and locks. Bolts tighten. The motion is upward and precise, like a mechanism deploying. 2.5 seconds. Final hold: 2 seconds.
+
+STYLE: Photorealistic, white background, locked camera. Mechanical precision, satisfying installation sequence. 5-6 seconds, 16:9.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMMERCIAL WRAPS ─────────────────────────────────────────────────── -->
+  <div class="service-panel" id="panel-wraps">
+    <div class="panel-header">
+      <h2>🎨 Commercial Vehicle Wraps</h2>
+      <p>Transformation style — plain white van to fully branded fleet vehicle</p>
+    </div>
+    <div class="prompt-tabs">
+      <button class="prompt-tab active" onclick="switchPrompt('wraps', 'a', this)">A — Before</button>
+      <button class="prompt-tab" onclick="switchPrompt('wraps', 'b', this)">B — After</button>
+      <button class="prompt-tab" onclick="switchPrompt('wraps', 'c', this)">C — Video Transition</button>
+    </div>
+    <div class="prompt-panel active" id="wraps-a">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt A — Before Shot · 16:9</span><button class="copy-btn" onclick="copyPrompt(this, 'wraps-a-text')">Copy</button></div>
+        <div class="prompt-text" id="wraps-a-text">Professional automotive photography of a white Ford Transit full-size cargo van, shot from a 3/4 front-side angle showing the full van body. Clean white studio background (#FFFFFF). The van is completely plain white — no graphics, no branding, no decals. Factory stock appearance. The van's large panel surfaces are empty white canvas. Mood: anonymous, unbranded, missed marketing opportunity.
+
+Photorealistic, 16:9. Studio softbox lighting from above-left, clean shadows. Sharp focus on the full van from front 3/4 angle. No text, no logos.
+
+Shot on Canon R5, 35mm, f/8, studio strobes.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="wraps-b">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt B — After Shot · 16:9 · Same angle</span><button class="copy-btn" onclick="copyPrompt(this, 'wraps-b-text')">Copy</button></div>
+        <div class="prompt-text" id="wraps-b-text">Professional automotive photography of the SAME Ford Transit van from the SAME 3/4 front-side angle. White studio background. The van is now completely wrapped in a striking full vehicle wrap — deep navy blue base (#203055) with bold geometric graphic elements in white and bright accent color. Large professional lettering covers the side panel (use placeholder text "FLEET WRAP SAMPLE"). The wrap is flawlessly applied — no bubbles, edges perfectly sealed, vinyl flush with all body lines and handles.
+
+The van looks like a premium professional fleet vehicle. Dramatic visual transformation from anonymous to attention-commanding. Same lighting as Prompt A. Photorealistic, 16:9.</div>
+      </div>
+    </div>
+    <div class="prompt-panel" id="wraps-c">
+      <div class="prompt-box">
+        <div class="prompt-box-header"><span class="prompt-type">Prompt C — Video Transition · Runway / Kling</span><button class="copy-btn" onclick="copyPrompt(this, 'wraps-c-text')">Copy</button></div>
+        <div class="prompt-text" id="wraps-c-text">START FRAME: Plain white Ford Transit van — no graphics, anonymous. 3/4 front-side angle, white studio background, locked camera.
+
+END FRAME: Same van fully wrapped in navy blue professional fleet graphics — bold design, sharp lettering, premium installation.
+
+TRANSITION: The wrap graphics appear to paint themselves across the van in a sweeping motion from front to rear — like digital ink flowing across the white surface, revealing the navy blue base and graphic elements progressively. The design builds up in layers: first the base color, then the geometric shapes, then the lettering. Each layer appears with crisp precision. The whole reveal takes 3 seconds. Final hold: 2 seconds on the complete wrap.
+
+STYLE: Photorealistic, white background, locked camera. Like watching a design come to life. Premium, satisfying, dramatic. 5-6 seconds, 16:9.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool Guide -->
+  <div style="margin-top: 40px;">
+    <div class="section-title" style="font-family: -apple-system,'Inter',sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 12px;">Recommended AI Tools</div>
+    <div class="tools">
+      <div class="tool-card"><span class="tool-label label-img">Images</span><h4>Midjourney v6</h4><p>Best overall image quality. Use /imagine with Prompt A, then reference the output image for Prompt B.</p></div>
+      <div class="tool-card"><span class="tool-label label-img">Images</span><h4>Flux Pro 1.1</h4><p>Fast, photorealistic. Great for automotive shots. Use via Replicate or fal.ai.</p></div>
+      <div class="tool-card"><span class="tool-label label-vid">Video</span><h4>Runway Gen-3 Alpha</h4><p>Upload Prompt A as start frame, Prompt B as end frame, paste Prompt C as description.</p></div>
+      <div class="tool-card"><span class="tool-label label-vid">Video</span><h4>Kling AI 1.6</h4><p>Excellent for automotive transformations. Use image-to-video mode with start/end frames.</p></div>
+      <div class="tool-card"><span class="tool-label label-both">Both</span><h4>Adobe Firefly</h4><p>Good for consistent studio lighting. Use Generative Fill to refine specific areas.</p></div>
+      <div class="tool-card"><span class="tool-label label-img">Images</span><h4>DALL-E 3</h4><p>Available in ChatGPT. Good results with automotive prompts. Use 16:9 landscape format.</p></div>
+    </div>
+  </div>
+
+  <div style="margin-top: 32px; padding: 16px 20px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); border-radius: 10px; font-size: 13px; color: var(--muted); line-height: 1.7;">
+    <strong style="color: var(--text);">Next Step:</strong> Generate images using the prompts above → Upload to <a href="/admin/collections/media" style="color: var(--accent);">CMS Media</a> → Attach to each service's <strong>Featured Image</strong> field in <a href="/admin/collections/services" style="color: var(--accent);">Services</a>.
+  </div>
+</div>
+
+<script>
+function switchService(serviceId, btn) {
+  document.querySelectorAll('.service-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.service-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + serviceId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function switchPrompt(serviceId, promptId, btn) {
+  const panel = document.getElementById('panel-' + serviceId);
+  panel.querySelectorAll('.prompt-panel').forEach(p => p.classList.remove('active'));
+  panel.querySelectorAll('.prompt-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(serviceId + '-' + promptId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function copyPrompt(btn, textId) {
+  const text = document.getElementById(textId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    launchConfetti();
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// Confetti
+function launchConfetti() {
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const pieces = Array.from({length: 80}, () => ({
+    x: Math.random() * canvas.width, y: -10,
+    vx: (Math.random() - 0.5) * 4, vy: Math.random() * 4 + 2,
+    r: Math.random() * 6 + 2, color: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#fff'][Math.floor(Math.random()*6)],
+    rot: Math.random() * 360, rv: (Math.random()-0.5)*8
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.rv; p.vy += 0.1;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI/180);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.r, -p.r/2, p.r*2, p.r);
+      ctx.restore();
+    });
+    if (++frame < 100) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+</script>
+</body>
+</html>

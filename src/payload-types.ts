@@ -76,7 +76,6 @@ export interface Config {
     gallery: Gallery;
     leads: Lead;
     'payload-kv': PayloadKv;
-    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -92,7 +91,6 @@ export interface Config {
     gallery: GallerySelect<false> | GallerySelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
-    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -113,13 +111,7 @@ export interface Config {
   };
   user: User;
   jobs: {
-    tasks: {
-      schedulePublish: TaskSchedulePublish;
-      inline: {
-        input: unknown;
-        output: unknown;
-      };
-    };
+    tasks: unknown;
     workflows: unknown;
   };
 }
@@ -260,7 +252,7 @@ export interface Media {
   };
 }
 /**
- * Vehicle upfitting services offered to retail, fleet, dealer, and government clients.
+ * Vehicle upfitting services shown on the site. Each service maps to a /services/[slug] page. Publish to make it live.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "services".
@@ -268,15 +260,15 @@ export interface Media {
 export interface Service {
   id: number;
   /**
-   * Service name as displayed on the website
+   * Service name as shown on the site. E.g. "Spray-On Bedliners (Patriot Liner)"
    */
   title: string;
   /**
-   * Auto-generated from "title". Edit to override. Must be unique.
+   * One sentence used in service cards and meta descriptions. 150–300 chars. E.g. "Factory-certified Patriot Liner spray-on bedliners — lifetime warranty included."
    */
-  slug: string;
+  shortDescription: string;
   /**
-   * Full service description with rich text formatting
+   * Full page body content. Use H2/H3 headings, bullet lists, and clear benefit-driven copy. This renders on the /services/[slug] page via the Lexical renderer.
    */
   description: {
     root: {
@@ -294,40 +286,46 @@ export interface Service {
     [k: string]: unknown;
   };
   /**
-   * Brief summary for cards, listings, and meta descriptions (max 300 chars)
-   */
-  shortDescription: string;
-  /**
-   * Audience segment this service targets
+   * Who this service is for. Retail = truck owners, Fleet = businesses with multiple vehicles.
    */
   category: 'retail' | 'fleet' | 'dealer' | 'gov';
   /**
-   * Primary image shown on service cards and hero sections
+   * Order in which this service appears in the grid. Lower numbers appear first. Bedliner = 1, Hitches = 2, etc.
+   */
+  sortOrder?: number | null;
+  /**
+   * Hero image for this service. Used as the card image on the services grid and the page hero background. Recommended: 1920×1080 JPG, under 500KB. Use the Image Generator prompts (see admin dashboard) to create scroll-stopping visuals.
    */
   featuredImage?: (number | null) | Media;
   /**
-   * Additional photos showcasing this service
+   * Before/after photos or completed project images. These show in the gallery section on the service page.
    */
   gallery?:
     | {
         image: number | Media;
+        /**
+         * Optional caption. E.g. "2024 Ford F-150 — full Patriot Liner with UV topcoat"
+         */
         caption?: string | null;
         id?: string | null;
       }[]
     | null;
   /**
-   * Cities where this service is available — drives geo page associations
+   * Cities this service targets for local SEO. Used to build /services/[service]/[city] geo pages automatically.
    */
   geoTags?:
     | {
+        /**
+         * E.g. "Rockville", "Bethesda", "Silver Spring"
+         */
         city: string;
         id?: string | null;
       }[]
     | null;
   /**
-   * Display order (lower = first)
+   * URL-safe identifier. Auto-generated from title. E.g. "bedliner". This becomes /services/bedliner. DO NOT change after publishing — it will break links.
    */
-  sortOrder?: number | null;
+  slug: string;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -341,7 +339,7 @@ export interface Service {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Location-targeted landing pages for local SEO (e.g. "Vehicle Upfitting in Rockville MD").
+ * Location-specific landing pages for local SEO. Each page targets search queries like "vehicle upfitting near [City], MD". Publishes to /locations/[slug].
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "geo-pages".
@@ -349,19 +347,19 @@ export interface Service {
 export interface GeoPage {
   id: number;
   /**
-   * City name (e.g. "Rockville")
+   * City name. E.g. "Bethesda" or "Silver Spring".
    */
   city: string;
   /**
-   * Two-letter state code
+   * Two-letter state code. E.g. "MD", "VA", "DC".
    */
   state: string;
   /**
-   * Auto-generated from "city". Edit to override. Must be unique.
+   * H1 headline for this geo page. E.g. "Vehicle Upfitting in Bethesda, MD". Auto-uses city name if blank.
    */
-  slug: string;
+  heroHeadline?: string | null;
   /**
-   * Full page body — unique content per city for SEO
+   * Main page body. Write 300–600 words of locally-relevant copy. Mention nearby neighborhoods, landmarks, and how far the city is from the Rockville shop. Include 2–3 service mentions with internal links.
    */
   content: {
     root: {
@@ -379,21 +377,17 @@ export interface GeoPage {
     [k: string]: unknown;
   };
   /**
-   * Override headline (e.g. "Vehicle Upfitting in Rockville MD"). Auto-generated if blank.
-   */
-  heroHeadline?: string | null;
-  /**
-   * Services highlighted on this geo page
+   * Services shown in the "Available Near [City]" grid. Select all services unless a specific city is only served by some. Affects the /locations/[slug] page grid.
    */
   relatedServices?: (number | Service)[] | null;
   /**
-   * Links to nearby location pages for internal linking
+   * Other geo pages shown as "Also Serving" links at the bottom. Builds internal link equity between location pages.
    */
   nearbyLocations?: (number | GeoPage)[] | null;
   /**
-   * Flag indicating this page was auto-generated from a template
+   * URL-safe ID. Auto-generated as "[city]-[state]". E.g. "bethesda-md". Becomes /locations/bethesda-md. DO NOT change after publishing.
    */
-  autoGenerate?: boolean | null;
+  slug: string;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -407,7 +401,7 @@ export interface GeoPage {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Customer reviews displayed on the website. Mark "Featured" to show on the homepage.
+ * Customer reviews displayed on the homepage and service pages. Set "Featured" to show on the homepage. Link to a service to show on that service's page.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "testimonials".
@@ -415,35 +409,39 @@ export interface GeoPage {
 export interface Testimonial {
   id: number;
   /**
-   * Customer name (e.g. "Mike R.")
+   * Customer first name + last initial. E.g. "Mike R."
    */
   name: string;
   /**
-   * Company or organization name (optional)
+   * Optional company name. E.g. "Rockville Landscaping LLC". Leave blank for personal vehicles.
    */
   company?: string | null;
   /**
-   * The full testimonial text (max 1000 chars)
+   * The review text. 1–4 sentences. Keep it authentic — avoid making edits that sound promotional.
    */
   review: string;
   /**
-   * Star rating 1–5
+   * Star rating from the customer.
    */
-  rating: number;
+  rating: '5' | '4' | '3';
   /**
-   * Which service is this testimonial about?
+   * Show on homepage?
+   */
+  featured?: boolean | null;
+  /**
+   * Which service this review is about. Linking a testimonial to a service makes it appear on that service's page.
    */
   service?: (number | null) | Service;
   /**
-   * Show on homepage and featured sections
+   * Where this review came from. Google reviews have the highest trust signal.
    */
-  featured?: boolean | null;
+  source?: ('google' | 'yelp' | 'facebook' | 'direct') | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Frequently asked questions, grouped by category. Used on service pages and the FAQ section.
+ * Frequently asked questions. These appear as an FAQ accordion on service and contact pages. Each FAQ generates a FAQPage schema entry for Google rich results.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "faqs".
@@ -451,11 +449,11 @@ export interface Testimonial {
 export interface Faq {
   id: number;
   /**
-   * The question as it will appear on the website
+   * The question as a customer would ask it. Start with "How", "What", "Do you", "Can I", etc. This shows as the accordion header.
    */
   question: string;
   /**
-   * Full answer — supports formatting, links, and lists
+   * The full answer. 2–4 sentences. Can include links to relevant service pages. This generates a FAQPage schema entry that may appear in Google's featured snippets.
    */
   answer: {
     root: {
@@ -473,11 +471,11 @@ export interface Faq {
     [k: string]: unknown;
   };
   /**
-   * Group for filtering on the frontend
+   * Category determines which pages this FAQ appears on. "General" shows on the contact and homepage. Service-specific categories filter to their respective pages.
    */
-  category: 'general' | 'services' | 'pricing' | 'fleet' | 'warranty' | 'scheduling';
+  category: 'general' | 'services' | 'fleet' | 'scheduling' | 'warranty' | 'pricing';
   /**
-   * Display order (lower = first)
+   * Display order within its category. Lower = shown first.
    */
   sortOrder?: number | null;
   updatedAt: string;
@@ -541,31 +539,34 @@ export interface Gallery {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Inbound leads from the website contact/quote forms. Public can submit; only admins can view.
+ * Inbound quote requests and contact form submissions from the website. NEW leads require follow-up. Update status as you work through them.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "leads".
  */
 export interface Lead {
   id: number;
-  /**
-   * Full name of the person requesting a quote
-   */
   name: string;
-  /**
-   * Contact email address
-   */
-  email: string;
-  /**
-   * Phone number (optional)
-   */
   phone?: string | null;
+  email?: string | null;
   /**
-   * Year / Make / Model of the vehicle
+   * Year, make, model. E.g. "2023 Ford F-150 SuperCrew"
    */
   vehicle?: string | null;
   /**
-   * Services the customer is interested in
+   * Customer's message or notes from the form.
+   */
+  message?: string | null;
+  /**
+   * Type of customer.
+   */
+  leadType: 'retail' | 'fleet' | 'dealer-gov' | 'contact' | 'quote';
+  /**
+   * Follow-up status. Update this as you work the lead.
+   */
+  status: 'new' | 'in-progress' | 'quoted' | 'won' | 'lost' | 'spam';
+  /**
+   * Services the customer asked about. Populated from the quote form checkboxes.
    */
   requestedServices?:
     | {
@@ -573,38 +574,23 @@ export interface Lead {
         id?: string | null;
       }[]
     | null;
-  /**
-   * Free-form message from the customer
-   */
-  message?: string | null;
-  /**
-   * Audience segment
-   */
-  leadType?: ('retail' | 'fleet' | 'dealer-gov') | null;
-  /**
-   * Current pipeline stage
-   */
-  status?: ('new' | 'contacted' | 'quoted' | 'closed-won' | 'closed-lost') | null;
-  /**
-   * How the lead arrived
-   */
   source?: ('web' | 'dealer' | 'referral' | 'phone' | 'walk-in') | null;
   /**
-   * URL path the form was submitted from
+   * URL path where form was submitted. E.g. /services/bedliner
    */
   sourcePage?: string | null;
   /**
-   * Auto-generated reference ID (e.g. CU-XXXXXX)
-   */
-  refId?: string | null;
-  /**
-   * Submitter IP address (for abuse detection)
+   * Auto-captured for spam detection.
    */
   ipAddress?: string | null;
   /**
-   * Internal notes about this lead (not shown to customer)
+   * Auto-generated unique ID sent to the customer in confirmation email.
    */
-  adminNotes?: string | null;
+  refId?: string | null;
+  /**
+   * Should always be empty. Non-empty = bot submission.
+   */
+  honeypot?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -624,98 +610,6 @@ export interface PayloadKv {
     | number
     | boolean
     | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-jobs".
- */
-export interface PayloadJob {
-  id: number;
-  /**
-   * Input data provided to the job
-   */
-  input?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  taskStatus?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  completedAt?: string | null;
-  totalTried?: number | null;
-  /**
-   * If hasError is true this job will not be retried
-   */
-  hasError?: boolean | null;
-  /**
-   * If hasError is true, this is the error that caused it
-   */
-  error?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  /**
-   * Task execution log
-   */
-  log?:
-    | {
-        executedAt: string;
-        completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
-        taskID: string;
-        input?:
-          | {
-              [k: string]: unknown;
-            }
-          | unknown[]
-          | string
-          | number
-          | boolean
-          | null;
-        output?:
-          | {
-              [k: string]: unknown;
-            }
-          | unknown[]
-          | string
-          | number
-          | boolean
-          | null;
-        state: 'failed' | 'succeeded';
-        error?:
-          | {
-              [k: string]: unknown;
-            }
-          | unknown[]
-          | string
-          | number
-          | boolean
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
-  queue?: string | null;
-  waitUntil?: string | null;
-  processing?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -908,10 +802,10 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface ServicesSelect<T extends boolean = true> {
   title?: T;
-  slug?: T;
-  description?: T;
   shortDescription?: T;
+  description?: T;
   category?: T;
+  sortOrder?: T;
   featuredImage?: T;
   gallery?:
     | T
@@ -926,7 +820,7 @@ export interface ServicesSelect<T extends boolean = true> {
         city?: T;
         id?: T;
       };
-  sortOrder?: T;
+  slug?: T;
   meta?:
     | T
     | {
@@ -945,12 +839,11 @@ export interface ServicesSelect<T extends boolean = true> {
 export interface GeoPagesSelect<T extends boolean = true> {
   city?: T;
   state?: T;
-  slug?: T;
-  content?: T;
   heroHeadline?: T;
+  content?: T;
   relatedServices?: T;
   nearbyLocations?: T;
-  autoGenerate?: T;
+  slug?: T;
   meta?:
     | T
     | {
@@ -971,8 +864,9 @@ export interface TestimonialsSelect<T extends boolean = true> {
   company?: T;
   review?: T;
   rating?: T;
-  service?: T;
   featured?: T;
+  service?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1018,23 +912,23 @@ export interface GallerySelect<T extends boolean = true> {
  */
 export interface LeadsSelect<T extends boolean = true> {
   name?: T;
-  email?: T;
   phone?: T;
+  email?: T;
   vehicle?: T;
+  message?: T;
+  leadType?: T;
+  status?: T;
   requestedServices?:
     | T
     | {
         serviceName?: T;
         id?: T;
       };
-  message?: T;
-  leadType?: T;
-  status?: T;
   source?: T;
   sourcePage?: T;
-  refId?: T;
   ipAddress?: T;
-  adminNotes?: T;
+  refId?: T;
+  honeypot?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1045,37 +939,6 @@ export interface LeadsSelect<T extends boolean = true> {
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-jobs_select".
- */
-export interface PayloadJobsSelect<T extends boolean = true> {
-  input?: T;
-  taskStatus?: T;
-  completedAt?: T;
-  totalTried?: T;
-  hasError?: T;
-  error?: T;
-  log?:
-    | T
-    | {
-        executedAt?: T;
-        completedAt?: T;
-        taskSlug?: T;
-        taskID?: T;
-        input?: T;
-        output?: T;
-        state?: T;
-        error?: T;
-        id?: T;
-      };
-  taskSlug?: T;
-  queue?: T;
-  waitUntil?: T;
-  processing?: T;
-  updatedAt?: T;
-  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1264,28 +1127,6 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskSchedulePublish".
- */
-export interface TaskSchedulePublish {
-  input: {
-    type?: ('publish' | 'unpublish') | null;
-    locale?: string | null;
-    doc?:
-      | ({
-          relationTo: 'services';
-          value: number | Service;
-        } | null)
-      | ({
-          relationTo: 'geo-pages';
-          value: number | GeoPage;
-        } | null);
-    global?: string | null;
-    user?: (number | null) | User;
-  };
-  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

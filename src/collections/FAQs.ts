@@ -1,25 +1,18 @@
 import type { CollectionConfig } from 'payload'
-import { logAfterChange, logAfterDelete } from '../hooks/accessLog'
+import { isAdmin } from '../access/isAdmin'
+import { publicReadAdminWrite } from '../access/publicReadAdminWrite'
 
 export const FAQs: CollectionConfig = {
   slug: 'faqs',
-  labels: {
-    singular: 'FAQ',
-    plural: 'FAQs',
-  },
   admin: {
     useAsTitle: 'question',
-    defaultColumns: ['question', 'category', '_status', 'updatedAt'],
+    defaultColumns: ['question', 'category', 'sortOrder', '_status'],
+    description: 'Frequently asked questions. These appear as an FAQ accordion on service and contact pages. Each FAQ generates a FAQPage schema entry for Google rich results.',
     group: 'Content',
-    description: 'Frequently asked questions, grouped by category. Used on service pages and the FAQ section.',
-    listSearchableFields: ['question'],
   },
   access: {
-    read: () => true,
-    create: ({ req: { user } }) => Boolean(user),
-    update: ({ req: { user } }) => Boolean(user),
-    delete: ({ req: { user } }) => Boolean(user),
-  },
+    ...publicReadAdminWrite,
+  } as CollectionConfig['access'],
   versions: {
     drafts: true,
     maxPerDoc: 10,
@@ -30,7 +23,7 @@ export const FAQs: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'The question as it will appear on the website',
+        description: 'The question as a customer would ask it. Start with "How", "What", "Do you", "Can I", etc. This shows as the accordion header.',
       },
     },
     {
@@ -38,39 +31,40 @@ export const FAQs: CollectionConfig = {
       type: 'richText',
       required: true,
       admin: {
-        description: 'Full answer — supports formatting, links, and lists',
+        description: 'The full answer. 2–4 sentences. Can include links to relevant service pages. This generates a FAQPage schema entry that may appear in Google\'s featured snippets.',
       },
     },
     {
-      name: 'category',
-      type: 'select',
-      required: true,
-      options: [
-        { label: 'General', value: 'general' },
-        { label: 'Services', value: 'services' },
-        { label: 'Pricing', value: 'pricing' },
-        { label: 'Fleet', value: 'fleet' },
-        { label: 'Warranty', value: 'warranty' },
-        { label: 'Scheduling', value: 'scheduling' },
+      type: 'row',
+      fields: [
+        {
+          name: 'category',
+          type: 'select',
+          required: true,
+          defaultValue: 'general',
+          options: [
+            { label: 'General', value: 'general' },
+            { label: 'Services', value: 'services' },
+            { label: 'Fleet', value: 'fleet' },
+            { label: 'Scheduling', value: 'scheduling' },
+            { label: 'Warranty', value: 'warranty' },
+            { label: 'Pricing', value: 'pricing' },
+          ],
+          admin: {
+            width: '50%',
+            description: 'Category determines which pages this FAQ appears on. "General" shows on the contact and homepage. Service-specific categories filter to their respective pages.',
+          },
+        },
+        {
+          name: 'sortOrder',
+          type: 'number',
+          defaultValue: 99,
+          admin: {
+            width: '50%',
+            description: 'Display order within its category. Lower = shown first.',
+          },
+        },
       ],
-      defaultValue: 'general',
-      admin: {
-        position: 'sidebar',
-        description: 'Group for filtering on the frontend',
-      },
-    },
-    {
-      name: 'sortOrder',
-      type: 'number',
-      defaultValue: 0,
-      admin: {
-        position: 'sidebar',
-        description: 'Display order (lower = first)',
-      },
     },
   ],
-  hooks: {
-    afterChange: [logAfterChange],
-    afterDelete: [logAfterDelete],
-  },
 }
