@@ -211,14 +211,14 @@ async function seed() {
       company: 'Rockville Fleet Services',
       review:
         'Capital Upfitters did our entire fleet — bedliners and ladder racks on 15 trucks. Everything was done on time and the quality is outstanding.',
-      rating: 5,
+      rating: 5 as unknown as never,
       featured: true,
     },
     {
       name: 'Sarah T.',
       review:
         'Got a Patriot Liner bedliner on my F-150. The finish is perfect and they were done in about 2 hours. Highly recommend.',
-      rating: 5,
+      rating: 5 as unknown as never,
       featured: true,
     },
     {
@@ -226,7 +226,7 @@ async function seed() {
       company: 'Bethesda Landscaping',
       review:
         'We needed a Stealth Hitch for the company SUV — zero visible hardware. The install was clean and professional. Will be back for ceramic coating.',
-      rating: 5,
+      rating: 5 as unknown as never,
       featured: true,
     },
   ]
